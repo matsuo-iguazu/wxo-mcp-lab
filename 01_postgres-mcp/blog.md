@@ -9,167 +9,110 @@
 
 「WxO エージェントからデータベースを参照したい」というユースケースはよくあります。
 WxO には MCP（Model Context Protocol）サーバーを Toolkit として登録する機能があり、
-公式の PostgreSQL MCP サーバーを使えば、自然言語 → SQL 変換 → DB 参照 が実現できます。
+公式の PostgreSQL MCP サーバーを使えば、自然言語 → SQL 変換 → DB 参照が実現できます。
 
-この記事では **Supabase（クラウド PostgreSQL）に接続するまでの手順**と、
-途中で遭遇した**5つのハマりポイント**を記録します。
+この記事では **Supabase に接続するまでの構成**と、検証中に気づいた **WxO の MCP 実行モデルの特徴**、
+そして遭遇した**5つのハマりポイント**を紹介します。
+
+手順の詳細はリポジトリの [track-a/README.md](https://github.com/matsuo-iguazu/wxo-mcp-lab/blob/main/01_postgres-mcp/track-a/README.md) を参照してください。
 
 ---
 
-## アーキテクチャ
+## MCP サーバーの実行モデル — 3つのパターン
+
+MCP サーバーの接続方式は大きく3つあります。WxO でどれが使えるか、という視点で整理します。
+
+### パターン1: ローカル PC（STDIO）
 
 ```
-ユーザー発話（自然言語）
-  ↓
-WxO エージェント（M_postgres_agent）
-  ↓  MCP Toolkit 呼び出し（STDIO）
-WxO クラウド上で npx が起動
-  ↓  @modelcontextprotocol/server-postgres
-Supabase PostgreSQL
+┌──────────────────────────┐
+│       ローカル PC         │
+│                          │
+│  Claude Desktop 等       │
+│       │ STDIO            │
+│       ↓                  │
+│  npx mcp-server          │  ← PC 上で動く
+│       │                  │
+└───────┼──────────────────┘
+        │ TCP
+        ↓
+   PostgreSQL
 ```
 
-### 実はMCPサーバーはPCで動いていない
+Claude Desktop や VS Code などのクライアントが、**手元の PC で** `npx` や `python` を起動します。
+MCP の最もオーソドックスな使い方ですが、WxO エージェントからは利用できません。
+
+---
+
+### パターン2: サーバーホスト型（StreamableHTTP）
+
+```
+┌──────────────────┐        ┌──────────────────┐
+│   WxO クラウド   │        │  MCP サーバー    │
+│                  │        │  (自前でホスト)  │
+│   WxO Agent      │──HTTPS→│  Railway 等      │  ← 公開 URL が必要
+│                  │        │       │          │
+└──────────────────┘        └───────┼──────────┘
+                                    │ TCP
+                                    ↓
+                               PostgreSQL
+```
+
+MCP サーバーをインターネット上のどこかにホストし、HTTPS で公開します。
+WxO から URL を指定して接続できますが、**サーバーの用意・運用が必要**です。
+
+---
+
+### パターン3: WxO STDIO（今回）
+
+```
+┌─────────────────────────────────────┐
+│             WxO クラウド             │
+│                                     │
+│   WxO Agent                         │
+│       │ STDIO（内部）               │
+│       ↓                             │
+│   npx @modelcontextprotocol/        │  ← WxO クラウド内で動く
+│       server-postgres               │     PC も公開サーバーも不要
+│       │                             │
+└───────┼─────────────────────────────┘
+        │ TCP
+        ↓
+   PostgreSQL（Supabase 等）
+```
+
+WxO の MCP Toolkit（STDIO モード）は `command:` に書いたプロセスを **WxO クラウド側で実行**します。
+手元の PC に Node.js 環境は不要で、公開サーバーを用意する必要もありません。
+
+---
+
+## 実は MCP サーバーは PC で動いていない
 
 これが今回一番の発見でした。
 
-WxO の MCP Toolkit（STDIO モード）は `npx` や `python` コマンドを **WxO クラウド（OpenShift コンテナ）上で実行**します。手元の PC に Node.js 環境は不要です。
+以前は「MCP サーバーを使うには手元の PC で Node.js を動かす必要がある」と説明してきましたが、
+WxO の MCP Toolkit 機能を使えばその必要はありません。
 
-エラー発生時のスタックトレースに `/opt/app-root/lib64/python3.12/` というパスが出てきたことで確認できました。これは OpenShift コンテナのパスです。
-
-以前は「MCP サーバーを使うには手元の PC で Node.js を動かす必要がある」と説明してきましたが、WxO の MCP Toolkit 機能を使えばその必要はありません。
-
----
-
-## 使ったもの
-
-- **IBM watsonx Orchestrate**: SaaS環境
-- **MCP サーバー**: [`@modelcontextprotocol/server-postgres`](https://github.com/modelcontextprotocol/servers-archived/tree/main/src/postgres)（公式 archived）
-- **データベース**: [Supabase](https://supabase.com)（無料プランで十分）
-- **WxO ADK CLI**: `orchestrate` コマンド
+エラー発生時のスタックトレースに `/opt/app-root/lib64/python3.12/` というパスが含まれており、
+これが OpenShift コンテナ（WxO クラウドの実行環境）のパスであることで確認できました。
 
 ---
 
-## 手順
-
-### 1. Supabase にサンプルテーブルを作成（scripts/setup_supabase.sql）
-
-Supabase の SQL Editor で以下を実行します。
-
-```sql
-DROP TABLE IF EXISTS products;
-
-CREATE TABLE products (
-    id       SERIAL PRIMARY KEY,
-    name     VARCHAR(100) NOT NULL,
-    price    INTEGER      NOT NULL,
-    category VARCHAR(50),
-    stock    INTEGER DEFAULT 0
-);
-
-INSERT INTO products (name, price, category, stock) VALUES
-  ('ノートPC',           98000, 'PC',         15),
-  ('マウス',              2500, 'peripheral',  50),
-  ('モニター 24インチ',  45000, 'display',      8),
-  -- ... 全12行は setup_supabase.sql 参照
-```
-
-### 2. WxO Connection を定義する（connections/m-postgres-conn.yaml）
-
-`DATABASE_URL` を WxO のセキュアストレージで管理するために Connection を使います。
-
-```yaml
-spec_version: v1
-kind: connection
-app_id: m-postgres-conn
-environments:
-  draft:
-    security_scheme: key_value_creds
-    type: team
-  live:
-    security_scheme: key_value_creds
-    type: team
-```
-
-Connection YAML 自体には認証情報を書きません。実際の `DATABASE_URL` は後で CLI で登録します。
-
-### 3. MCP Toolkit を定義する（toolkits/m-postgres-toolkit.yaml）
-
-```yaml
-spec_version: v1
-kind: mcp
-name: m-postgres
-description: PostgreSQL 読み取り専用クエリツールキット
-command: '["sh", "-c", "npx -y @modelcontextprotocol/server-postgres $DATABASE_URL"]'
-connections:
-  - m-postgres-conn
-tools:
-  - "*"
-```
-
-### 4. エージェントを定義する（agents/M-postgres-agent.yaml）
-
-```yaml
-spec_version: v1
-kind: native
-name: M_postgres_agent
-description: PostgreSQL データベースを自然言語で参照するエージェント
-instructions: |
-  You are a helpful data assistant with read-only access to a PostgreSQL database.
-  When the user asks about data, tables, or database contents:
-  1. Use the `m-postgres:query` tool to run appropriate SELECT statements.
-  2. To list tables, query: SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
-  3. Always generate correct SQL based on the user's natural language request.
-  4. Present results clearly and concisely in Japanese.
-  Constraints:
-  - Only SELECT queries are allowed. Never attempt INSERT, UPDATE, DELETE, or DDL.
-llm: groq/openai/gpt-oss-120b
-style: react
-tools:
-  - m-postgres:query
-```
-
-### 5. インポートする（import-all.sh）
-
-```bash
-# Connection 定義をインポート
-orchestrate connections import -f connections/m-postgres-conn.yaml
-
-# DATABASE_URL を登録（draft / live 両環境に）
-orchestrate connections configure -a m-postgres-conn --env draft --type team --kind key_value
-orchestrate connections set-credentials -a m-postgres-conn --env draft \
-  -e "DATABASE_URL=postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
-
-orchestrate connections configure -a m-postgres-conn --env live --type team --kind key_value
-orchestrate connections set-credentials -a m-postgres-conn --env live \
-  -e "DATABASE_URL=postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
-
-# Toolkit をインポート（ここで実際に npx が起動してツール一覧を取得する）
-orchestrate toolkits import -f toolkits/m-postgres-toolkit.yaml
-
-# エージェントをインポート
-orchestrate agents import -f agents/M-postgres-agent.yaml
-```
-
-`import-all.sh` を使えばワンコマンドで実行できます：
-
-```bash
-DATABASE_URL="postgresql://..." ./import-all.sh
-```
-
-### 6. テスト
-
-WxO チャットで `M_postgres_agent` を選択して話しかけます：
+## 構成の概要
 
 ```
-テーブル一覧を見せて
-→ public スキーマのテーブル一覧が返ってくる
+WxO Connection（m-postgres-conn）
+  → DATABASE_URL をセキュアストレージで管理。Git に認証情報を入れない。
 
-products テーブルのデータをすべて表示して
-→ 12行のデータが表示される
+WxO MCP Toolkit（m-postgres）
+  → npx で @modelcontextprotocol/server-postgres を起動
+  → 公開ツール: query（SELECT 専用）
 
-1万円以下の商品を教えて
-→ 価格が10000円以下の商品が絞り込まれて返ってくる
+WxO エージェント（M_postgres_agent）
+  → 自然言語 → SQL を生成して m-postgres:query を呼び出す
 ```
+
+詳しい設定内容・手順は [track-a/README.md](https://github.com/matsuo-iguazu/wxo-mcp-lab/blob/main/01_postgres-mcp/track-a/README.md) を参照してください。
 
 ---
 
@@ -188,7 +131,7 @@ command: "sh -c 'npx -y @modelcontextprotocol/server-postgres $DATABASE_URL'"
 command: '["sh", "-c", "npx -y @modelcontextprotocol/server-postgres $DATABASE_URL"]'
 ```
 
-`$DATABASE_URL` を展開するためにシェル経由（`sh -c`）が必要なので、この形式が必要になります。
+`$DATABASE_URL` を展開するためにシェル経由（`sh -c`）が必要で、この形式が必要になります。
 
 ---
 
@@ -200,8 +143,7 @@ command: '["sh", "-c", "npx -y @modelcontextprotocol/server-postgres $DATABASE_U
 Toolkits are only supported for experimental_customer_care style agents
 ```
 
-`react` スタイル（と `default` スタイル）では `toolkits:` は使えません。
-`tools:` フィールドに `toolkit名:tool名` 形式で指定します。
+`react` スタイルでは `toolkits:` は使えず、`tools:` に `toolkit名:tool名` 形式で指定します。
 
 ```yaml
 # ❌ react スタイルでは動かない
@@ -219,14 +161,11 @@ tools:
 
 ### ③ エージェント名にハイフンは使えない
 
-`M-postgres-agent` という名前でインポートしようとしたところ：
-
 ```
 Name must start with a letter and contain only alphanumeric characters and underscores
 ```
 
 エージェント名は英数字とアンダースコアのみ。`M_postgres_agent` に変更して解決。
-
 Toolkit 名や Connection 名はハイフン OK なので混乱しやすいポイントです。
 
 ---
@@ -237,7 +176,7 @@ Supabase のデフォルト接続文字列（Direct connection）は IPv6 アド
 WxO クラウドから IPv6 には到達できず `ENETUNREACH` エラーになりました。
 
 ```
-# ❌ Direct connection（IPv6）
+# ❌ Direct connection（IPv6 の可能性）
 postgresql://postgres:pass@db.xxxxx.supabase.co:5432/postgres
 
 # ✅ Session Pooler（IPv4）
@@ -252,23 +191,24 @@ Supabase ダッシュボードの **Connect → Session pooler** から取得し
 ### ⑤ toolkit インポート前に認証情報の登録が必須
 
 `orchestrate toolkits import` を実行すると、WxO は実際に MCP サーバーを起動してツール一覧を取得しに行きます。
-つまり、**インポート時点で `DATABASE_URL` が登録済みでないとサーバーが起動できず失敗します**。
+つまり **インポート前に `DATABASE_URL` が登録済みでないと、サーバーが起動できず失敗します**。
 
-必ず以下の順序で実行してください：
-
-1. `connections import`（接続定義）
-2. `connections configure` + `set-credentials`（認証情報を登録）
-3. `toolkits import`（ここで初めてサーバーが起動する）
-4. `agents import`
+必ず Connection の `set-credentials` を先に実行してから `toolkits import` を行ってください。
 
 ---
 
-## 補足: archived サーバーについて
+## 考慮点
 
-`@modelcontextprotocol/server-postgres` は公式の archived リポジトリのため、今後のメンテナンスは期待できません。
-また `query` ツール1本のみ（`BEGIN TRANSACTION READ ONLY` でラップされた SELECT 専用）なので、機能は限定的です。
+**`@modelcontextprotocol/server-postgres` について**
 
-**本番利用や R/W が必要な場合**は [`crystaldba/postgres-mcp`](https://github.com/crystaldba/postgres-mcp) やカスタム FastMCP サーバーへの移行を推奨します。
+- 公式の archived リポジトリのため、今後のメンテナンスは期待できない
+- `query` ツール1本（`BEGIN TRANSACTION READ ONLY` でラップ）— SELECT 専用
+- 検証・デモ用途には十分だが、本番利用には向かない
+
+**本番利用を検討する場合**
+
+- R/W が必要 → [crystaldba/postgres-mcp](https://github.com/crystaldba/postgres-mcp)（Python、アクティブ維持）
+- 目的別ツールを設計したい → 独自 FastMCP サーバー（STDIO モードなら PC・公開サーバー不要）
 
 ---
 
@@ -276,7 +216,7 @@ Supabase ダッシュボードの **Connect → Session pooler** から取得し
 
 | ポイント | 内容 |
 |---|---|
-| MCP サーバーの実行場所 | WxO クラウド（PC 不要） |
+| MCP サーバーの実行場所 | WxO クラウド（PC も公開サーバーも不要） |
 | Supabase 接続文字列 | Session Pooler URL（IPv4）を使う |
 | `command:` の書き方 | JSON リスト形式 |
 | ツールの指定方法 | `tools: - toolkit名:tool名` |
