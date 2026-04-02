@@ -51,9 +51,9 @@ WxO の MCP Toolkit（STDIO モード）は `npx` や `python` コマンドを *
 
 ## 手順
 
-### 1. Supabase にサンプルテーブルを作成
+### 1. Supabase にサンプルテーブルを作成（scripts/setup_supabase.sql）
 
-Supabase の SQL Editor で以下を実行します（[`scripts/setup_supabase.sql`](track-a/scripts/setup_supabase.sql) に同じ内容があります）。
+Supabase の SQL Editor で以下を実行します。
 
 ```sql
 DROP TABLE IF EXISTS products;
@@ -73,12 +73,11 @@ INSERT INTO products (name, price, category, stock) VALUES
   -- ... 全12行は setup_supabase.sql 参照
 ```
 
-### 2. WxO Connection を定義する
+### 2. WxO Connection を定義する（connections/m-postgres-conn.yaml）
 
 `DATABASE_URL` を WxO のセキュアストレージで管理するために Connection を使います。
 
 ```yaml
-# connections/m-postgres-conn.yaml
 spec_version: v1
 kind: connection
 app_id: m-postgres-conn
@@ -93,10 +92,9 @@ environments:
 
 Connection YAML 自体には認証情報を書きません。実際の `DATABASE_URL` は後で CLI で登録します。
 
-### 3. MCP Toolkit を定義する
+### 3. MCP Toolkit を定義する（toolkits/m-postgres-toolkit.yaml）
 
 ```yaml
-# toolkits/m-postgres-toolkit.yaml
 spec_version: v1
 kind: mcp
 name: m-postgres
@@ -108,10 +106,9 @@ tools:
   - "*"
 ```
 
-### 4. エージェントを定義する
+### 4. エージェントを定義する（agents/M-postgres-agent.yaml）
 
 ```yaml
-# agents/M-postgres-agent.yaml
 spec_version: v1
 kind: native
 name: M_postgres_agent
@@ -131,7 +128,7 @@ tools:
   - m-postgres:query
 ```
 
-### 5. インポートする
+### 5. インポートする（import-all.sh）
 
 ```bash
 # Connection 定義をインポート
