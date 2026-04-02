@@ -1,7 +1,7 @@
 # WxO エージェントから PostgreSQL を自然言語で参照する — MCP Toolkit 接続手順
 
 > **対象読者**: IBM watsonx Orchestrate（WxO）を使っていて、エージェントから DB を参照したい方
-> **検証環境**: WxO IG（SaaS）/ Supabase（クラウド PostgreSQL）
+> **検証環境**: WxO SaaS環境 / Supabase（クラウド PostgreSQL）
 
 ---
 
@@ -42,7 +42,7 @@ WxO の MCP Toolkit（STDIO モード）は `npx` や `python` コマンドを *
 
 ## 使ったもの
 
-- **IBM watsonx Orchestrate**: IG 環境（SaaS）
+- **IBM watsonx Orchestrate**: SaaS環境
 - **MCP サーバー**: [`@modelcontextprotocol/server-postgres`](https://github.com/modelcontextprotocol/servers-archived/tree/main/src/postgres)（公式 archived）
 - **データベース**: [Supabase](https://supabase.com)（無料プランで十分）
 - **WxO ADK CLI**: `orchestrate` コマンド

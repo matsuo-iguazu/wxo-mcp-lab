@@ -16,7 +16,7 @@ WxO エージェントから外部ツール・データソースを MCP（Model 
 
 ## 前提条件
 
-- IBM watsonx Orchestrate の環境（Developer Edition または IG/SaaS）
+- IBM watsonx Orchestrate の環境（Developer Edition または SaaS）
 - `orchestrate` CLI（[ADK](https://github.com/IBM/ibm-watsonx-orchestrate-adk) に同梱）
 - `orchestrate env activate <env>` で環境をアクティブにしておくこと
 
