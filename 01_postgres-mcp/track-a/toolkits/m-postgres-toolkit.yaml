@@ -1,0 +1,12 @@
+spec_version: v1
+kind: mcp
+name: m-postgres
+description: >
+  PostgreSQL データベースへの読み取り専用クエリツールキット。
+  自然言語の問いかけに対して SQL を生成・実行し、結果を返す。
+  接続先は WxO Connections (m-postgres-conn) の DATABASE_URL で管理する。
+command: '["sh", "-c", "npx -y @modelcontextprotocol/server-postgres $DATABASE_URL"]'
+connections:
+  - m-postgres-conn
+tools:
+  - "*"
