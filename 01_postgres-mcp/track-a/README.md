@@ -6,9 +6,9 @@
 
 ## 前提条件
 
-- IBM watsonx Orchestrate（SaaS または Developer Edition）
+- IBM watsonx Orchestrate（SaaS）
 - `orchestrate` CLI（[ADK](https://github.com/IBM/ibm-watsonx-orchestrate-adk) に同梱）
-- `orchestrate env activate <env>` で環境をアクティブにしておくこと
+- `orchestrate env activate <env>` で環境をアクティブにしておくこと（初回は `-a <api-key>` で API キーを登録）
 - Supabase アカウント（無料プランで可）
 
 ---
@@ -72,7 +72,11 @@ postgresql://postgres.{project-ref}:{password}@aws-1-ap-southeast-1.pooler.supab
 
 > **注意**: Direct connection（IPv6）は wxO クラウドから到達できないことがあります。必ず **Session pooler**（IPv4）を使ってください。
 
+この文字列は次の手順 3 で `DATABASE_URL` として使用します。
+
 ### 3. インポート（import-all.sh）
+
+手順 2 で取得した接続文字列を `DATABASE_URL` に指定して実行します。
 
 ```bash
 cd track-a
