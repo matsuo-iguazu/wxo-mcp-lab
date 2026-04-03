@@ -1,8 +1,8 @@
 # wxo-mcp-lab
 
-IBM watsonx Orchestrate（WxO）の **MCP Toolkit** 機能を検証するラボリポジトリです。
+IBM watsonx Orchestrate（wxO）の **MCP Toolkit** 機能を検証するラボリポジトリです。
 
-WxO エージェントから外部ツール・データソースを MCP（Model Context Protocol）経由で呼び出す方法を、実験ごとにまとめています。
+wxO エージェントから外部ツール・データソースを MCP（Model Context Protocol）経由で呼び出す方法を、実験ごとにまとめています。
 
 ---
 
@@ -10,7 +10,7 @@ WxO エージェントから外部ツール・データソースを MCP（Model 
 
 | # | タイトル | 概要 |
 |---|---|---|
-| [01_postgres-mcp](01_postgres-mcp/) | PostgreSQL MCP Toolkit | WxO エージェントから PostgreSQL を自然言語で参照する |
+| [01_postgres-mcp](01_postgres-mcp/) | PostgreSQL MCP Toolkit | wxO エージェントから PostgreSQL を自然言語で参照する |
 
 ---
 
