@@ -43,7 +43,7 @@ cd wxo-mcp-lab/01_postgres-mcp/track-a
 
 ### 2. Supabase の接続文字列を取得
 
-対象プロジェクトのダッシュボード → **Connect** → **Direct** → **Session pooler** を選択し、**Connection string** を取得します。
+対象プロジェクトのページ → **Connect** → **Direct** → **Session pooler** を選択し、**Connection string** を取得します。
 
 ```
 postgresql://postgres.xxxxxxxxxxxxxxxxxxxx:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
@@ -61,7 +61,9 @@ orchestrate connections import -f connections/m-postgres-conn.yaml
 
 ### 4. 認証情報を登録（CLI）
 
-手順 2 で取得した接続文字列を `DATABASE_URL` に指定して、draft / live の両環境に登録します。
+手順 2 で取得した接続文字列の `[YOUR-PASSWORD]` を Supabase プロジェクトのパスワードに置き換えて、draft / live の両環境に登録します。
+
+> **パスワードに特殊文字が含まれる場合**: シェルがパスワードを解釈してエラーになることがあります。英数字のみのパスワードに変更することを推奨します（対象プロジェクト → **Database** → **Settings** → **Database password**）。
 
 ```bash
 orchestrate connections configure -a m-postgres-conn --env draft --type team --kind key_value
