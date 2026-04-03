@@ -32,35 +32,9 @@ track-a/
 
 ## 手順
 
-### 1. Supabase にサンプルテーブルを作成（scripts/setup_supabase.sql）
+### 1. Supabase にサンプルテーブルを作成
 
 Supabase ダッシュボードの **SQL Editor** で `scripts/setup_supabase.sql` を実行します。
-
-```sql
-DROP TABLE IF EXISTS products;
-
-CREATE TABLE products (
-    id       SERIAL PRIMARY KEY,
-    name     VARCHAR(100) NOT NULL,
-    price    INTEGER      NOT NULL,
-    category VARCHAR(50),
-    stock    INTEGER DEFAULT 0
-);
-
-INSERT INTO products (name, price, category, stock) VALUES
-  ('ノートPC',              98000, 'PC',         15),
-  ('デスクトップPC',        120000, 'PC',          5),
-  ('マウス',                  2500, 'peripheral',  50),
-  ('ワイヤレスマウス',        4800, 'peripheral',  30),
-  ('モニター 24インチ',      45000, 'display',      8),
-  ('モニター 27インチ',      68000, 'display',      3),
-  ('メカニカルキーボード',   12000, 'peripheral',  20),
-  ('メンブレンキーボード',    4500, 'peripheral',  40),
-  ('USB ハブ 4ポート',        3200, 'accessory',   25),
-  ('USB ハブ 7ポート',        5800, 'accessory',   12),
-  ('ウェブカメラ HD',         8900, 'accessory',    6),
-  ('ヘッドセット',           15000, 'audio',       18);
-```
 
 ### 2. Supabase の接続文字列を取得
 
@@ -72,31 +46,43 @@ postgresql://postgres.{project-ref}:{password}@aws-1-ap-southeast-1.pooler.supab
 
 > **注意**: Direct connection（IPv6）は wxO クラウドから到達できないことがあります。必ず **Session pooler**（IPv4）を使ってください。
 
-この文字列は次の手順 3 で `DATABASE_URL` として使用します。
+以降の手順でこの文字列を `DATABASE_URL` として使用します。
 
-### 3. インポート（import-all.sh）
-
-手順 2 で取得した接続文字列を `DATABASE_URL` に指定して実行します。
+### 3. Connection をインポート（YAML）
 
 ```bash
-cd track-a
-chmod +x import-all.sh
-DATABASE_URL="postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres" \
-  ./import-all.sh
+orchestrate connections import -f connections/m-postgres-conn.yaml
 ```
 
-スクリプトは以下の順序で実行します：
+### 4. 認証情報を登録（CLI）
 
-| ステップ | コマンド | 説明 |
-|---|---|---|
-| 1 | `connections import` | Connection 定義をインポート |
-| 2 | `connections configure` + `set-credentials` | DATABASE_URL を draft/live に登録 |
-| 3 | `toolkits import` | MCP サーバーを起動してツール一覧を取得 |
-| 4 | `agents import` | エージェントをインポート |
+draft / live の両環境に `DATABASE_URL` を登録します。
 
-> **注意**: ステップ 2 の前に `toolkits import` を実行すると失敗します。wxO はインポート時に実際に MCP サーバーを起動してツールを列挙するため、認証情報が先に必要です。
+```bash
+orchestrate connections configure -a m-postgres-conn --env draft --type team --kind key_value
+orchestrate connections set-credentials -a m-postgres-conn --env draft \
+  -e "DATABASE_URL=postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
 
-### 4. テスト
+orchestrate connections configure -a m-postgres-conn --env live --type team --kind key_value
+orchestrate connections set-credentials -a m-postgres-conn --env live \
+  -e "DATABASE_URL=postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+```
+
+> **注意**: この手順を先に完了させてから次へ進んでください。Toolkit インポート時に wxO が MCP サーバーを起動してツール一覧を取得するため、認証情報が登録済みでないと失敗します。
+
+### 5. Toolkit をインポート（YAML）
+
+```bash
+orchestrate toolkits import -f toolkits/m-postgres-toolkit.yaml
+```
+
+### 6. エージェントをインポート（YAML）
+
+```bash
+orchestrate agents import -f agents/M-postgres-agent.yaml
+```
+
+### 7. テスト
 
 wxO チャットで `M_postgres_agent` を選択して話しかけます：
 
@@ -113,9 +99,22 @@ products テーブルのデータをすべて表示して
 
 ---
 
+## 一括実行（import-all.sh）
+
+手順 3〜6 は `import-all.sh` でまとめて実行することもできます。
+
+```bash
+chmod +x import-all.sh
+DATABASE_URL="postgresql://..." ./import-all.sh
+```
+
+> ファイル内のリソース名（`m-postgres-conn` 等）は固定です。変更する場合は YAML ファイルとスクリプトを合わせて編集してください。
+
+---
+
 ## ローカル PostgreSQL（Docker）への切り替え
 
-接続文字列を変えるだけで動作します：
+`DATABASE_URL` を変えるだけで動作します：
 
 ```bash
 docker run -d --name pg-test \
