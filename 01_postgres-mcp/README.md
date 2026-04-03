@@ -1,6 +1,6 @@
-# 01_postgres-mcp — PostgreSQL MCP Toolkit for watsonx Orchestrate (wxO)
+# 01_postgres-mcp — PostgreSQL MCP Toolkit for wxO
 
-wxO エージェントから PostgreSQL データベースを **自然言語で参照**する実験です。
+watsonx Orchestrate (wxO) エージェントから PostgreSQL データベースを **自然言語で参照**する実験です。
 MCP（Model Context Protocol）サーバーを wxO の MCP Toolkit として登録し、
 エージェントが自動的に SQL を生成して結果を返します。
 
