@@ -61,7 +61,7 @@ orchestrate connections import -f connections/m-postgres-conn.yaml
 
 ### 4. 認証情報を登録（CLI）
 
-手順 2 で取得した接続文字列の `[YOUR-PASSWORD]` を Supabase プロジェクトのパスワードに置き換えて、draft / live の両環境に登録します。
+手順 2 で取得した接続文字列を、キー `DATABASE_URL` の値として登録します。接続文字列内の `[YOUR-PASSWORD]` は Supabase プロジェクトのパスワードに置き換えてください。draft / live の両環境に登録します。
 
 > **パスワードに特殊文字が含まれる場合**: シェルがパスワードを解釈してエラーになることがあります。英数字のみのパスワードに変更することを推奨します（対象プロジェクト → **Database** → **Settings** → **Database password**）。
 
