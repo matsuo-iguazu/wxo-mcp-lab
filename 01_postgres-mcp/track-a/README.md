@@ -140,3 +140,73 @@ DATABASE_URL="postgresql://postgres:testpass@host.docker.internal:5432/postgres"
 - 公式の archived リポジトリのため、セキュリティアップデートは期待できません
 - `query` ツール1本のみ（`BEGIN TRANSACTION READ ONLY` でラップ）— SELECT 専用
 - 本番利用や R/W が必要な場合は [crystaldba/postgres-mcp](https://github.com/crystaldba/postgres-mcp) や独自 FastMCP を検討してください
+
+---
+
+## 検証メモ
+
+### `command:` のスペース分割問題
+
+wxO は `command:` に文字列を書くと、スペースで分割して引数リストを作ります。
+そのため `sh -c '...'` のようなシェル経由の起動は文字列では書けません。
+
+```yaml
+# ❌ スペース分割されて sh が正しく動かない
+command: "sh -c 'npx -y @modelcontextprotocol/server-postgres $DATABASE_URL'"
+
+# ✅ JSON リスト形式で書く
+command: '["sh", "-c", "npx -y @modelcontextprotocol/server-postgres $DATABASE_URL"]'
+```
+
+`$DATABASE_URL` を展開するためにシェル経由（`sh -c`）が必要で、この形式が必要になります。
+
+---
+
+### `toolkits:` フィールドは `react` スタイルで使えない
+
+エージェント YAML に `toolkits: - m-postgres` と書いたところ、インポートが失敗しました。
+
+```
+Toolkits are only supported for experimental_customer_care style agents
+```
+
+`react` スタイルでは `toolkits:` は使えず、`tools:` に `toolkit名:tool名` 形式で指定します。
+
+```yaml
+# ❌ react スタイルでは動かない
+toolkits:
+  - m-postgres
+
+# ✅ tools に toolkit名:tool名 形式で指定
+tools:
+  - m-postgres:query
+```
+
+ツール名は `orchestrate tools list` で確認できます。
+
+---
+
+### Supabase は Session Pooler URL を使う
+
+Supabase のデフォルト接続文字列（Direct connection）は IPv6 アドレスに解決されることがあります。
+wxO クラウドから IPv6 には到達できず `ENETUNREACH` エラーになりました。
+
+```
+# ❌ Direct connection（IPv6 の可能性）
+postgresql://postgres:pass@db.xxxxx.supabase.co:5432/postgres
+
+# ✅ Session Pooler（IPv4）
+postgresql://postgres.xxxxx:pass@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres
+```
+
+対象プロジェクトのページ → **Connect** → **Session pooler** から取得します。
+ユーザー名が `postgres.{project-ref}` 形式になる点も注意。
+
+---
+
+### toolkit インポート前に認証情報の登録が必須
+
+`orchestrate toolkits import` を実行すると、wxO は実際に MCP サーバーを起動してツール一覧を取得しに行きます。
+つまり **インポート前に `DATABASE_URL` が登録済みでないと、サーバーが起動できず失敗します**。
+
+必ず Connection の `set-credentials` を先に実行してから `toolkits import` を行ってください。
