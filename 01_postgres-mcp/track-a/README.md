@@ -13,20 +13,25 @@
 
 ---
 
-## ファイル構成
+## セットアップ
 
+### リポジトリを取得
+
+```bash
+git clone https://github.com/matsuo-iguazu/wxo-mcp-lab.git
+cd wxo-mcp-lab/01_postgres-mcp/track-a
 ```
-track-a/
-├── connections/
-│   └── m-postgres-conn.yaml     # wxO Connection 定義
-├── toolkits/
-│   └── m-postgres-toolkit.yaml  # MCP Toolkit 定義
-├── agents/
-│   └── M-postgres-agent.yaml    # エージェント定義
-├── scripts/
-│   └── setup_supabase.sql       # サンプルテーブル + データ
-└── import-all.sh                # 一括インポートスクリプト
-```
+
+### サンプルのリソース名について
+
+このリポジトリのファイルは以下の名称を前提に作成されています。
+ご利用の環境やチームの命名規則に合わせて、YAML ファイルおよびスクリプトを適宜変更してください。
+
+| リソース | サンプル名 |
+|---|---|
+| Connection | `m-postgres-conn` |
+| Toolkit | `m-postgres` |
+| エージェント | `M_postgres_agent` |
 
 ---
 
@@ -34,17 +39,15 @@ track-a/
 
 ### 1. Supabase にサンプルテーブルを作成
 
-Supabase ダッシュボードの **SQL Editor** で `scripts/setup_supabase.sql` を実行します。
+対象プロジェクトのダッシュボードの **SQL Editor** を開き、`scripts/setup_supabase.sql` の内容を貼り付けて **Run** します。
 
 ### 2. Supabase の接続文字列を取得
 
-Supabase ダッシュボード → **Connect** → **Session pooler** タブから接続文字列を取得します。
+対象プロジェクトのダッシュボード → **Connect** → **Direct** → **Session pooler** を選択し、**Connection string** を取得します。
 
 ```
 postgresql://postgres.{project-ref}:{password}@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
 ```
-
-> **注意**: Direct connection（IPv6）は wxO クラウドから到達できないことがあります。必ず **Session pooler**（IPv4）を使ってください。
 
 以降の手順でこの文字列を `DATABASE_URL` として使用します。
 
@@ -67,8 +70,6 @@ orchestrate connections configure -a m-postgres-conn --env live --type team --ki
 orchestrate connections set-credentials -a m-postgres-conn --env live \
   -e "DATABASE_URL=postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
 ```
-
-> **注意**: この手順を先に完了させてから次へ進んでください。Toolkit インポート時に wxO が MCP サーバーを起動してツール一覧を取得するため、認証情報が登録済みでないと失敗します。
 
 ### 5. Toolkit をインポート（YAML）
 
@@ -104,7 +105,6 @@ products テーブルのデータをすべて表示して
 手順 3〜6 は `import-all.sh` でまとめて実行することもできます。
 
 ```bash
-chmod +x import-all.sh
 DATABASE_URL="postgresql://..." ./import-all.sh
 ```
 
@@ -112,7 +112,7 @@ DATABASE_URL="postgresql://..." ./import-all.sh
 
 ---
 
-## ローカル PostgreSQL（Docker）への切り替え
+## 参考: ローカル PostgreSQL（Docker）への切り替え
 
 `DATABASE_URL` を変えるだけで動作します：
 
@@ -127,8 +127,8 @@ DATABASE_URL="postgresql://postgres:testpass@host.docker.internal:5432/postgres"
 
 ---
 
-## 注意事項
+## `@modelcontextprotocol/server-postgres` についての注意
 
-- `@modelcontextprotocol/server-postgres` は archived のため、セキュリティアップデートは期待できません
+- 公式の archived リポジトリのため、セキュリティアップデートは期待できません
 - `query` ツール1本のみ（`BEGIN TRANSACTION READ ONLY` でラップ）— SELECT 専用
 - 本番利用や R/W が必要な場合は [crystaldba/postgres-mcp](https://github.com/crystaldba/postgres-mcp) や独自 FastMCP を検討してください
