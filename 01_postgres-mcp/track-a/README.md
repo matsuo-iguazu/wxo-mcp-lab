@@ -1,4 +1,4 @@
-# Track A — @modelcontextprotocol/server-postgres (npx / STDIO)
+# Track A — 公式 MCP サーバー @modelcontextprotocol/server-postgres を使った PostgreSQL 接続
 
 公式 archived MCP サーバーを使って wxO エージェントから PostgreSQL を参照します。
 
@@ -46,12 +46,14 @@ cd wxo-mcp-lab/01_postgres-mcp/track-a
 対象プロジェクトのダッシュボード → **Connect** → **Direct** → **Session pooler** を選択し、**Connection string** を取得します。
 
 ```
-postgresql://postgres.{project-ref}:{password}@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+postgresql://postgres.xxxxxxxxxxxxxxxxxxxx:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
 ```
 
-以降の手順でこの文字列を `DATABASE_URL` として使用します。
+取得した文字列は手順 4 の `DATABASE_URL` として使用します。
 
 ### 3. Connection をインポート（YAML）
+
+`connections/m-postgres-conn.yaml` を適宜編集してから実行します。
 
 ```bash
 orchestrate connections import -f connections/m-postgres-conn.yaml
@@ -59,25 +61,29 @@ orchestrate connections import -f connections/m-postgres-conn.yaml
 
 ### 4. 認証情報を登録（CLI）
 
-draft / live の両環境に `DATABASE_URL` を登録します。
+手順 2 で取得した接続文字列を `DATABASE_URL` に指定して、draft / live の両環境に登録します。
 
 ```bash
 orchestrate connections configure -a m-postgres-conn --env draft --type team --kind key_value
 orchestrate connections set-credentials -a m-postgres-conn --env draft \
-  -e "DATABASE_URL=postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+  -e "DATABASE_URL=postgresql://postgres.xxxxxxxxxxxxxxxxxxxx:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
 
 orchestrate connections configure -a m-postgres-conn --env live --type team --kind key_value
 orchestrate connections set-credentials -a m-postgres-conn --env live \
-  -e "DATABASE_URL=postgresql://postgres.xxxxx:pass@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+  -e "DATABASE_URL=postgresql://postgres.xxxxxxxxxxxxxxxxxxxx:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
 ```
 
 ### 5. Toolkit をインポート（YAML）
+
+`toolkits/m-postgres-toolkit.yaml` を適宜編集してから実行します。
 
 ```bash
 orchestrate toolkits import -f toolkits/m-postgres-toolkit.yaml
 ```
 
 ### 6. エージェントをインポート（YAML）
+
+`agents/M-postgres-agent.yaml` を適宜編集してから実行します。
 
 ```bash
 orchestrate agents import -f agents/M-postgres-agent.yaml
