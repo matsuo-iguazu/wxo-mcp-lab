@@ -1,18 +1,7 @@
 # Track B — FastMCP Python で PostgreSQL R/W MCP サーバーを自作する
 
-Track A では公式 npm パッケージを使って SELECT 専用の PostgreSQL アクセスを実現した。
-Track B では **Python で MCP サーバーを自作**し、CRUD 操作を wxO エージェントから呼び出せることを確認する。
-
----
-
-## Track A との比較
-
-| | Track A | Track B |
-|---|---|---|
-| MCP サーバー | `@modelcontextprotocol/server-postgres`（npm 公式） | `server.py`（FastMCP で自作） |
-| デプロイ方式 | `command:` で npx 実行 | `package_root:` でローカルファイルをアップロード |
-| 操作 | SELECT のみ | SELECT / INSERT / UPDATE / DELETE |
-| ツール数 | 1本（query） | 4本 |
+**Python で MCP サーバーを自作**し、CRUD 操作を wxO エージェントから呼び出せることを確認する。
+Track A との比較は [01_postgres-mcp/README.md](../README.md) を参照。
 
 ---
 
