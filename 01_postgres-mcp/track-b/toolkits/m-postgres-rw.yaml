@@ -1,0 +1,13 @@
+spec_version: v1
+kind: mcp
+name: m-postgres-rw
+description: >
+  FastMCP Python による PostgreSQL R/W ツールキット。
+  list_products / add_product / update_product_price / delete_product の 4 ツールを提供する。
+  mcp_server/server.py を wxO クラウドにアップロードして実行する。
+package_root: ../mcp_server
+command: python server.py
+connections:
+  - m-postgres-conn
+tools:
+  - "*"
