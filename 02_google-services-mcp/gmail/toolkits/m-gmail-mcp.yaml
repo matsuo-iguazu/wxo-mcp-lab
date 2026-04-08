@@ -1,0 +1,10 @@
+spec_version: v1
+kind: mcp
+name: m-gmail-mcp
+description: FastMCP Python による Gmail 読み書きツールキット
+package_root: ../mcp_server
+command: python server.py
+connections:
+  - m-gmail-conn
+tools:
+  - "*"

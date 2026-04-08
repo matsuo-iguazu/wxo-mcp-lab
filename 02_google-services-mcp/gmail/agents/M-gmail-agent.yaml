@@ -1,0 +1,14 @@
+spec_version: v1
+kind: native
+name: M_gmail_agent
+description: Gmail を自然言語で操作するエージェント。メールの一覧取得・本文確認・送信ができる。
+llm: watsonx/meta-llama/llama-3-3-70b-instruct
+style: react
+instructions: |
+  あなたは Gmail を操作するアシスタントです。
+  ユーザーの指示に従い、メールの一覧取得・本文確認・送信を行ってください。
+  日本語で応答してください。
+tools:
+  - m-gmail-mcp:list_messages
+  - m-gmail-mcp:get_message
+  - m-gmail-mcp:send_message

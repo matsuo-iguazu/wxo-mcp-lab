@@ -92,18 +92,20 @@ DATABASE_URL="postgresql://..." fastmcp dev mcp_server/server.py
 
 ### Phase 2 — wxO にデプロイ
 
-Track A で Connection `m-postgres-conn` が登録済みであれば、手順 2〜3 は不要。
+Track A で Connection `m-postgres-conn` が登録済みであれば、手順 1 は不要。手順 2〜3 を実施してください。
 
 #### 1. Connection をインポート（Track A 未実施の場合のみ）
 
 ```bash
 orchestrate connections import -f connections/m-postgres-conn.yaml
 
-for env in draft live; do
-  orchestrate connections configure -a m-postgres-conn --env $env --type team --kind key_value
-  orchestrate connections set-credentials -a m-postgres-conn --env $env \
-    -e "DATABASE_URL=postgresql://postgres.xxxx:[PASSWORD]@aws-1-xxx.pooler.supabase.com:5432/postgres"
-done
+orchestrate connections configure -a m-postgres-conn --env draft --type team --kind key_value
+orchestrate connections set-credentials -a m-postgres-conn --env draft \
+  -e "DATABASE_URL=postgresql://postgres.xxxx:[PASSWORD]@aws-1-xxx.pooler.supabase.com:5432/postgres"
+
+orchestrate connections configure -a m-postgres-conn --env live --type team --kind key_value
+orchestrate connections set-credentials -a m-postgres-conn --env live \
+  -e "DATABASE_URL=postgresql://postgres.xxxx:[PASSWORD]@aws-1-xxx.pooler.supabase.com:5432/postgres"
 ```
 
 #### 2. Toolkit をデプロイ
