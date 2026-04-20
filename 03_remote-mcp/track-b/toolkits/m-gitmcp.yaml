@@ -1,0 +1,10 @@
+spec_version: v1
+kind: mcp
+name: m-gitmcp
+description: >
+  GitMCP 経由で matsuo-iguazu/wxo-mcp-lab リポジトリのドキュメントを検索するリモート MCP ツールキット。
+  SSE でパブリックサーバーに接続する。認証不要。
+transport: sse
+server_url: https://gitmcp.io/matsuo-iguazu/wxo-mcp-lab
+tools:
+  - "*"

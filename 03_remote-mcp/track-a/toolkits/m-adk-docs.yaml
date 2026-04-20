@@ -1,0 +1,10 @@
+spec_version: v1
+kind: mcp
+name: m-adk-docs
+description: >
+  IBM watsonx Orchestrate ADK 公式ドキュメントを検索するリモート MCP ツールキット。
+  Streamable HTTP でパブリックサーバーに接続する。認証不要。
+transport: streamable_http
+server_url: https://developer.watson-orchestrate.ibm.com/mcp
+tools:
+  - "*"
