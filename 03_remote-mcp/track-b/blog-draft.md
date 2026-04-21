@@ -184,5 +184,5 @@ Track A（Streamable HTTP）と合わせると、YAML の `transport:` を切り
 
 - [wxO で PostgreSQL に MCP 接続する（Track A: 公式 npm パッケージ）](https://qiita.com/IG_Matsuo/items/9106a80d26fbe3b736e0)
 - [wxO で PostgreSQL に MCP 接続する（Track B: FastMCP で R/W 操作）](https://qiita.com/IG_Matsuo/items/ecaf203af45d6737705b)
-- [wxO から公式ドキュメントをリモート MCP で検索する（Streamable HTTP）]() ← Track A
+- [wxO から公式ドキュメントをリモート MCP で検索する（Streamable HTTP）](https://qiita.com/IG_Matsuo/items/8196b6316769fe816f7f) ← Track A
 - wxO で GitHub リポジトリを MCP サーバー化して検索する（SSE × GitMCP）← この記事
