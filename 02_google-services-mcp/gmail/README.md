@@ -34,8 +34,8 @@ Gmail API へのアクセスには OAuth2 認証が必要です。OAuth2 では2
 
 | トークン | 有効期限 | 役割 |
 |---|---|---|
-| **access_token** | 約1時間 | Gmail API を呼び出す際に使う実際の認証キー |
-| **refresh_token** | 長期間有効（※） | 期限切れの access_token を新しく取得するために使う |
+| **access_token** | 約1時間 | Gmail API を直接呼び出す際の認証キー |
+| **refresh_token** | 長期間有効（※） | Gmail API には直接使わず、新しい access_token を取得するために使う |
 
 ※ Google OAuth アプリがテストステータスの場合は7日で期限切れ。本番公開後は無期限。
 
