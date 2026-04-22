@@ -26,6 +26,46 @@
 
 ---
 
+## 認証の考え方
+
+### OAuth2 のトークンについて
+
+Gmail API へのアクセスには OAuth2 認証が必要です。OAuth2 では2種類のトークンが登場します。
+
+| トークン | 有効期限 | 役割 |
+|---|---|---|
+| **access_token** | 約1時間 | Gmail API を呼び出す際に使う実際の認証キー |
+| **refresh_token** | 長期間有効（※） | 期限切れの access_token を新しく取得するために使う |
+
+※ Google OAuth アプリがテストステータスの場合は7日で期限切れ。本番公開後は無期限。
+
+つまり **refresh_token さえ持っていれば、access_token を何度でも自動更新できる**ため、長期運用が可能になります。
+
+### wxO での扱い方
+
+wxO の MCP Toolkit が扱える Connection タイプは **key_value のみ**（OAuth auth code flow タイプは MCP Toolkit では未対応）。
+
+そのため、次の方針で実装しています。
+
+```
+【1回だけ・手元の PC で実施】
+  get_refresh_token.py を実行
+  → ブラウザで Google アカウントに同意
+  → refresh_token を取得
+
+【wxO に預ける】
+  refresh_token / client_id / client_secret を
+  key_value Connection に格納（ただの文字列として保存）
+
+【MCP サーバーが毎回実施】
+  起動のたびに refresh_token → access_token に交換
+  → Gmail API を呼び出す
+```
+
+「OAuth2 を使っている」のは事実ですが、**wxO 側は refresh_token という文字列を受け取るだけ**です。OAuth のブラウザ認証フロー自体は手元 PC で1回だけ実行し、以降は MCP サーバーが自動で access_token を更新します。
+
+---
+
 ## サンプルのリソース名について
 
 このリポジトリのファイルは以下の名称を前提に作成されています。
